@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-  <title>Jurassic Spell Run • Professor Peter's Lab</title>
+  <title>Jurasspell Park • Professor Peter's Lab</title>
   <style>
     :root{
       --bg:#0c1222;
@@ -56,7 +56,7 @@
       .grid{ grid-template-columns: 1.1fr .9fr; }
     }
     /* Game canvas with crunchy pixels */
-    #gameWrap{ padding:10px; }
+    #gameWrap{ padding:10px; position:relative; }
     #gameCanvas{
       width:100%;
       aspect-ratio: 16 / 9;
@@ -130,8 +130,8 @@
 <body>
   <div class="app">
     <header>
-      <h1>🦖 Jurassic Spell Run <span class="tiny mono">v1.0</span></h1>
-      <div class="subtitle">An 8‑bit style spelling chase. A T‑Rex is after your Jeep—spell fast to escape!</div>
+      <h1>🦖 Jurasspell Park <span class="tiny mono">v1.1</span></h1>
+      <div class="subtitle">An 8-bit spelling chase across Isla Nublar—escape by car or on foot!</div>
     </header>
 
     <!-- Setup card -->
@@ -185,7 +185,7 @@ volcano"></textarea>
               <button id="clearSketch" class="btn-ghost">Clear</button>
               <button class="btn-ghost" id="thinPen">Thin</button>
               <button class="btn-ghost" id="thickPen">Thick</button>
-              <span class="badge">Sketch pad shows by default</span>
+              <span class="badge">Click or touch to write</span>
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@ volcano"></textarea>
   </div>
 
   <script>
-  // --- Simple 8-bit runner with T-Rex & Jeep (all inline, no assets) ---
+  // --- 8-bit side scroller with car-to-foot chase transitions ---
   (()=>{
     // DOM
     const setupCard = document.getElementById('setupCard');
@@ -230,14 +230,20 @@ volcano"></textarea>
     let playing = false;
     let ended = false;
     let currentWord = '';
-    let gap = 44; // distance between jeep and rex in pixels
+    let gap = 48; // distance parameter
     let bgScroll = 0;
     let t = 0;
     let audioCtx = null;
+    let lastRoarAt = 0;
 
-    // Entities (position centered-ish by gap)
-    const jeep = { x: 170 + gap/2, y: 120 };
-    const rex  = { x: 150 - gap/2, y: 110, frame: 0 };
+    // Modes: 'car' -> 'runner' after 1st life lost
+    let mode = 'car';
+    let anim = { eatCar:false, catchRunner:false, escape:false };
+
+    // Entities
+    const jeep = { x: 170 + gap/2, y: 120, visible:true };
+    const driver = { x: 190, y: 118, vx:1.6, vy:0, visible:false, jumping:false, frame:0 };
+    const rex  = { x: 150 - gap/2, y: 104, frame: 0, scale:1.3, mouth:0 };
 
     // Handle device pixel ratio for sketch pad crispness
     function resizeSketch(){
@@ -296,12 +302,12 @@ volcano"></textarea>
       ]);
     }
     function sfxRoar(){
-      // Low descending growl-ish
       toneSequence([
         {f: 220, len:.20, type:'triangle', v:.35},
         {f: 150, len:.25, type:'triangle', v:.32},
         {f: 110, len:.30, type:'triangle', v:.28}
       ]);
+      lastRoarAt = performance.now();
     }
     function sfxEscape(){
       toneSequence([
@@ -317,7 +323,6 @@ volcano"></textarea>
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
         u.rate = 0.95;
-        // prefer a clear voice if present
         const voices = window.speechSynthesis.getVoices();
         const v = voices.find(v=>/Samantha|Moira|Karen|Daniel|Victoria|Allison|Ava|Alyss/i.test(v.name));
         if(v) u.voice = v;
@@ -339,10 +344,11 @@ volcano"></textarea>
     function startGame(){
       words = parseWords(wordList.value);
       if(words.length===0){
-        // load a default set if none
         words = ['dinosaur','fossil','jeep','jungle','escape','tunnel','volcano'];
       }
-      idx = 0; gap = 44; setLives(3); playing = true; ended=false;
+      idx = 0; gap = 52; setLives(3); playing = true; ended=false;
+      mode='car'; anim={eatCar:false, catchRunner:false, escape:false};
+      jeep.visible = true; driver.visible=false; driver.jumping=false; driver.x=190; driver.y=118; driver.vx=1.6; driver.vy=0;
       setupCard.classList.add('hide');
       gameCard.classList.remove('hide');
       ensureAudio();
@@ -354,7 +360,6 @@ volcano"></textarea>
       setupCard.classList.remove('hide');
       gameCard.classList.add('hide');
       answer.value='';
-      // Clear sketch
       resizeSketch();
     }
 
@@ -365,62 +370,94 @@ volcano"></textarea>
       currentWord = words[idx];
       setProgress(idx, words.length);
       promptEl.textContent = `Listen and type the word ${idx+1} of ${words.length}.`;
-      if(!first){
-        // small delay before speaking next word
-        setTimeout(()=>speak(currentWord), 350);
-      }else{
-        speak(currentWord);
-      }
+      if(!first){ setTimeout(()=>speak(currentWord), 350); } else { speak(currentWord); }
     }
 
     function submitAnswer(){
       if(!playing || ended) return;
       const a = normalize(answer.value);
       const w = normalize(currentWord);
-      // one try per word
       if(a === w){
         sfxCorrect();
-        gap += 20; // jeep further away
+        gap += (mode==='car'? 22 : 18); // get away a bit
       }else{
         sfxWrong();
         setLives(lives-1);
-        gap -= 16; // T-Rex closer
+        gap -= (mode==='car'? 18 : 16);
+        if(lives===2 && mode==='car' && !anim.eatCar){
+          // transition: T-Rex eats car, driver bails
+          anim.eatCar = true;
+          eatCarSequence();
+          return advanceWord();
+        }
         if(lives<=0){
-          // trigger catch
-          lose();
-          return;
+          // final catch on foot
+          return catchRunnerSequence();
         }
       }
+      advanceWord();
+    }
+    function advanceWord(){
       idx++;
       answer.value='';
       nextWord();
     }
 
-    function lose(){
-      ended=true; playing=false;
-      sfxRoar();
-      // dramatic catch animation: close the gap quickly
-      const int = setInterval(()=>{
-        gap -= 6;
-        if(gap <= 6){
-          clearInterval(int);
-          gap = 0;
-          overlay('🦖 GAME OVER', 'The T‑Rex caught your Jeep!');
-        }
-      }, 50);
+    // --- Transition sequences ---
+    function eatCarSequence(){
+      // Close the gap quickly, chomp, swap to runner mode
+      ensureAudio();
+      const step = ()=>{
+        if(gap > 8){ gap -= 4; requestAnimationFrame(step); return; }
+        // chomp animation & roar
+        sfxRoar();
+        setTimeout(()=>{
+          jeep.visible = false;
+          mode = 'runner';
+          driver.visible = true;
+          gap = 36; // give the runner a tiny head start
+          anim.eatCar = false;
+        }, 380);
+      };
+      step();
+    }
+
+    function catchRunnerSequence(){
+      playing=false;
+      ensureAudio(); sfxRoar();
+      anim.catchRunner = true;
+      // pull gap to 4 then make driver jump/fall off
+      const closeStep = ()=>{
+        if(gap > 6){ gap -= 3; requestAnimationFrame(closeStep); return; }
+        // driver panic jump off screen
+        driver.jumping = true;
+        driver.vy = -3.6;
+        driver.vx = -1.2; // startled backward jump
+        setTimeout(()=>{
+          ended=true; anim.catchRunner=false;
+          overlay('🦖 GAME OVER', 'The T-Rex caught up to the driver!');
+        }, 1400);
+      };
+      closeStep();
     }
 
     function win(){
       ended=true; playing=false;
+      anim.escape = true;
       sfxEscape();
-      overlay('🏁 YOU ESCAPED!', 'You spelled all the words. Through the tunnel you go!');
-      // animate jeep driving into a tunnel on right
+      // run off the right side depending on mode
       let steps = 0;
       const int = setInterval(()=>{
         steps++;
-        gap += 2;           // rex falls behind
-        bgScroll += 2.2;    // speed up background
-        if(steps>120){ clearInterval(int); }
+        if(mode==='car'){
+          gap += 3.2; bgScroll += 2.4;
+        }else{
+          gap += 2.6; bgScroll += 2.0;
+        }
+        if(steps>140){
+          clearInterval(int);
+          overlay('🏁 YOU ESCAPED!', mode==='car' ? 'The Jeep outran the T-Rex!' : 'The driver sprinted to safety!');
+        }
       }, 20);
     }
 
@@ -457,7 +494,7 @@ volcano"></textarea>
       sky.addColorStop(1,'#9fe4ff');
       g.fillStyle = sky;
       g.fillRect(0,0,W,H);
-      // distant mountains
+      // distant blocky hills
       g.fillStyle = '#6bb769';
       drawHill(0,120, 80, 30);
       drawHill(90,125, 70, 28);
@@ -488,44 +525,82 @@ volcano"></textarea>
       }
     }
 
-    // Pixel-ish Jeep
+    // Jurassic Park–style Jeep (tan w/ red accents)
     function drawJeep(x,y){
-      // wheels
+      if(!jeep.visible) return;
+      // wheels (red rims)
       g.fillStyle='#111'; g.fillRect(x-20,y+16, 10,10); g.fillRect(x+16,y+16,10,10);
-      // body
-      g.fillStyle='#f2d16a'; g.fillRect(x-24,y, 56,16);
+      g.fillStyle='#c62828'; g.fillRect(x-18,y+18, 6,6); g.fillRect(x+18,y+18,6,6);
+      // body (tan)
+      g.fillStyle='#d9c3a5'; g.fillRect(x-26,y, 60,16);
+      // bumpers / grille
+      g.fillStyle='#303030'; g.fillRect(x-30,y+4, 4,10); g.fillRect(x+34,y+4, 4,10);
       // roll bars
       g.fillStyle='#2b2b2b'; g.fillRect(x-18,y-10, 4,10); g.fillRect(x+10,y-10, 4,10);
       g.fillRect(x-18,y-12, 32,3);
-      // cabin
+      // cabin glass
       g.fillStyle='#a9cee8'; g.fillRect(x-10,y-8, 22,8);
-      // stripe
-      g.fillStyle='#cc2c2c'; g.fillRect(x-24,y+8, 56,3);
+      // red stripes
+      g.fillStyle='#cc2c2c'; g.fillRect(x-26,y+8, 60,3);
+      g.fillRect(x-26,y+3, 18,2); g.fillRect(x+8,y+3, 18,2);
+      // faux door logo: red circle + JP text
+      g.fillStyle='#b71c1c'; g.fillRect(x-6,y+2, 6,6);
+      g.fillStyle='#ffd460'; g.fillRect(x-5,y+3, 1,4); g.fillRect(x-3,y+3, 1,4); // "JP" hint
       // headlight
       g.fillStyle='#fff59d'; g.fillRect(x+30,y+6, 4,4);
+      // spare tire
+      g.fillStyle='#111'; g.fillRect(x-32,y+8, 6,6);
     }
 
-    // Pixel-ish T-Rex
-    function drawRex(x,y,frame){
+    // Pixel runner (driver)
+    function drawDriver(x,y,frame){
+      if(!driver.visible) return;
+      // torso
+      g.fillStyle='#e0e0e0'; g.fillRect(x-3,y-10, 6,10);
+      // head
+      g.fillStyle='#ffcc99'; g.fillRect(x-3,y-16, 6,6);
+      // legs (alternate)
+      const leg = (frame%12<6)? -2 : 2;
+      g.fillStyle='#3f51b5'; g.fillRect(x-6+leg,y, 4,8);
+      g.fillRect(x+2-leg,y, 4,8);
+      // arms
+      g.fillStyle='#ffcc99'; g.fillRect(x-6,y-8, 4,4);
+      g.fillRect(x+2,y-8, 4,4);
+    }
+
+    // Big T-Rex with mouth animation
+    function drawRex(x,y,frame,scale){
+      g.save();
+      g.translate(x,y);
+      g.scale(scale,scale);
       // tail
-      g.fillStyle='#3a6736'; g.fillRect(x-34,y+6, 14,6); g.fillRect(x-22,y+4, 8,8);
+      g.fillStyle='#3a6736'; g.fillRect(-40,6, 16,6); g.fillRect(-24,4, 10,8);
       // body
-      g.fillRect(x-16,y, 26,18);
-      // leg animation
-      const off = (frame%20<10)? 0 : 3;
-      g.fillRect(x-8,y+18, 8,8);           // left thigh
-      g.fillRect(x-6+off,y+24, 6,6);       // left foot
-      g.fillRect(x+6,y+18, 8,8);           // right thigh
-      g.fillRect(x+8-off,y+24, 6,6);       // right foot
+      g.fillRect(-18,0, 30,20);
+      // legs run cycle
+      const stride = (frame%20<10)? 0 : 4;
+      g.fillRect(-8,20, 8,8); g.fillRect(-6+stride,28, 6,6);
+      g.fillRect(8,20, 8,8);  g.fillRect(10-stride,28, 6,6);
       // arm
-      g.fillRect(x+4,y+8, 8,4);
+      g.fillRect(6,10, 8,4);
       // neck & head
-      g.fillRect(x+8,y-10, 10,10);
-      g.fillRect(x+16,y-8, 12,8);
+      g.fillRect(8,-12, 12,12);
+      const mouthOpen = (frame%16<8) ? 1 : 0;
+      g.fillRect(18,-10, 14,10); // skull
+      // mouth
+      if(mouthOpen){
+        g.fillStyle='#203018';
+        g.fillRect(18,-2, 14,6);
+        g.fillStyle='#fff';
+        g.fillRect(20,-2, 3,2); g.fillRect(24,-2, 3,2); g.fillRect(28,-2, 3,2);
+        g.fillRect(22,2, 3,2);  g.fillRect(26,2, 3,2);
+      }else{
+        g.fillStyle='#fff';
+        g.fillRect(20,-2, 10,2);
+      }
       // eye
-      g.fillStyle='#000'; g.fillRect(x+24,y-6, 2,2);
-      // teeth
-      g.fillStyle='#fff'; g.fillRect(x+20,y-2, 6,2); g.fillRect(x+26,y-2, 2,2);
+      g.fillStyle='#000'; g.fillRect(28,-6, 2,2);
+      g.restore();
     }
 
     function drawTunnel(){
@@ -544,39 +619,63 @@ volcano"></textarea>
     // Animation loop
     function loop(){
       t++;
-      // Background
-      bgScroll += 0.6;
+      bgScroll += 0.7;
       drawSky();
       drawGround(bgScroll);
 
-      // If player has won, show tunnel
-      if(ended && idx >= words.length){
+      // tunnel if escaping
+      if(ended && anim.escape){
         drawTunnel();
       }
 
       // Position entities from gap centerpoint
-      jeep.x = 170 + gap/2;
+      if(mode==='car'){
+        jeep.x = 170 + gap/2;
+      }else{
+        driver.x = 170 + gap/2;
+      }
       rex.x  = 150 - gap/2;
       // Bobbing
-      jeep.y = 118 + Math.sin(t/12)*1.5;
-      rex.y  = 112 + Math.sin(t/10)*1.0;
+      if(mode==='car'){
+        jeep.y = 118 + Math.sin(t/12)*1.2;
+      }else{
+        // runner slight bob
+        driver.y = 118 + Math.sin(t/9)*1.0;
+      }
+      rex.y  = 104 + Math.sin(t/9)*1.0;
       rex.frame = t;
 
-      // Clamp so they remain on screen
-      jeep.x = Math.max(36, Math.min(W-36, jeep.x));
+      // Clamp
+      if(mode==='car'){
+        jeep.x = Math.max(36, Math.min(W-36, jeep.x));
+      }else{
+        driver.x = Math.max(20, Math.min(W-24, driver.x));
+      }
       rex.x  = Math.max(18, Math.min(W-36, rex.x));
 
-      // Draw
-      drawJeep(jeep.x, jeep.y);
-      drawRex(rex.x, rex.y, rex.frame);
+      // Draw entities
+      if(mode==='car'){ drawJeep(jeep.x, jeep.y); }
+      else { drawDriver(driver.x, driver.y, t); }
+      drawRex(rex.x, rex.y, rex.frame, rex.scale);
 
-      // If gap small and game is still playing, make it a little tense
-      if(playing && gap < 12){
+      // Driver physics if jumping (during catch animation)
+      if(driver.jumping){
+        driver.vy += 0.18; // gravity
+        driver.x  += driver.vx;
+        driver.y  += driver.vy;
+        if(driver.y > 140) driver.y = 140;
+      }
+
+      // Near-roar cue
+      if(playing && gap < 14){
+        const now = performance.now();
+        if(now - lastRoarAt > 2000){ sfxRoar(); }
         // subtle camera shake
         const dx = (Math.random()-.5)*2;
         const dy = (Math.random()-.5)*2;
         g.drawImage(gameCanvas, dx, dy);
       }
+
       requestAnimationFrame(loop);
     }
     loop();
@@ -593,7 +692,7 @@ volcano"></textarea>
       if(e.key==='Enter'){ submitAnswer(); }
     });
 
-    // --- Sketch pad drawing ---
+    // --- Sketch pad drawing (mouse + touch) ---
     let drawing=false, lastX=0, lastY=0;
     function skDown(x,y){ drawing=true; lastX=x; lastY=y; }
     function skMove(x,y){
@@ -632,7 +731,7 @@ volcano"></textarea>
     window.addEventListener('resize', resizeSketch);
     resizeSketch();
 
-    // Make sure voices are loaded on some browsers
+    // preload voices event hook
     if ('speechSynthesis' in window){
       window.speechSynthesis.onvoiceschanged = ()=>{};
     }
