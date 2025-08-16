@@ -82,7 +82,7 @@
         position: fixed; left: 0; right: 0; bottom: 0;
         padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
         background: linear-gradient(180deg, rgba(13,27,42,.92), rgba(13,27,42,.98));
-        border-top: 1px solid #24345a; box-shadow: 0 -6px 24px rgba(0,0,0,.35); z-index: 50;
+        border-top: 1px solid #24345a; box-shadow: 0 -6px 24px rgba(0,0,0,.35); z-index: 9999;
       }
       body{ padding-bottom: calc(var(--dockH) + env(safe-area-inset-bottom) + 24px); }
       #typeDock input{ flex:1 1 auto; min-width: 40%; }
@@ -92,7 +92,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>🦖 Spellassic Park <span class="tiny mono">v2.0</span></h1>
+      <h1>🦖 Spellassic Park <span class="tiny mono">v2.1</span></h1>
       <div class="subtitle">An 8‑bit spelling chase—escape by Jeep or on foot!</div>
     </header>
 
@@ -415,10 +415,35 @@ volcano"></textarea>
 
     // ---- Mobile keyboard handling ----
     function isSmallScreen(){ return window.matchMedia('(max-width: 800px)').matches; }
-    function updateDockPadding(){
+    
+    // ---- iOS dock positioning so it's always above the keyboard ----
+    function isKeyboardOpen(){
+      if (!window.visualViewport) return false;
+      // Heuristic: visual viewport height shrinks significantly when keyboard is open
+      return window.visualViewport.height < window.innerHeight - 100;
+    }
+    function placeDockAboveKeyboard(){
+      if(!isSmallScreen() || !window.visualViewport) return;
+      const vv = window.visualViewport;
+      const h  = typeDock.offsetHeight || 84;
+      // Position the dock using top relative to the *visual* viewport
+      // so it sits just above the keyboard (and "Done" accessory bar)
+      const top = Math.max(0, vv.offsetTop + vv.height - h - 8);
+      typeDock.style.position = 'fixed';
+      typeDock.style.top = top + 'px';
+      typeDock.style.bottom = 'auto';
+    }
+    function restoreDockBottom(){
+      typeDock.style.top = '';
+      typeDock.style.bottom = '0';
+    }
+function updateDockPadding(){
+      const kb = isKeyboardOpen();
+
       if (isSmallScreen()){
         const h = typeDock.offsetHeight || 84;
         document.documentElement.style.setProperty('--dockH', h+'px');
+        if (kb) { placeDockAboveKeyboard(); } else { restoreDockBottom(); }
         document.body.style.paddingBottom = `calc(${h}px + env(safe-area-inset-bottom) + 16px)`;
       }else document.body.style.paddingBottom = '16px';
     }
@@ -442,7 +467,7 @@ volcano"></textarea>
     }
     window.addEventListener('resize', ()=>{ resizeSketch(); updateDockPadding(); adjustForKeyboard(); });
     if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', ()=>{ updateDockPadding(); adjustForKeyboard(); autoScrollCanvas(); });
+      window.visualViewport.addEventListener('resize', ()=>{ updateDockPadding(); adjustForKeyboard(); autoScrollCanvas(); if(isKeyboardOpen()) placeDockAboveKeyboard(); else restoreDockBottom(); });
     }
 
     // ---- Events ----
@@ -452,8 +477,8 @@ volcano"></textarea>
     goBtn.addEventListener('click', submitAnswer);
     answer.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAnswer(); });
     muteBtn.addEventListener('click', toggleMusic);
-    answer.addEventListener('focus', ()=> setTimeout(()=>{ adjustForKeyboard(); autoScrollCanvas(); }, 100));
-    answer.addEventListener('blur', ()=> setTimeout(()=>{ gameCanvas.style.height=''; }, 150));
+    answer.addEventListener('focus', ()=> setTimeout(()=>{ adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard(); }, 100));
+    answer.addEventListener('blur', ()=> setTimeout(()=>{ gameCanvas.style.height=''; restoreDockBottom(); }, 150));
 
     // ---- Sketch pad drawing (mouse + touch) ----
     let drawing=false, lastX=0, lastY=0;
