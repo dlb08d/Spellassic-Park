@@ -92,7 +92,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>🦖 Spellassic Park <span class="tiny mono">v2.2</span></h1>
+      <h1>🦖 Spellassic Park <span class="tiny mono">v2.3</span></h1>
       <div class="subtitle">An 8‑bit spelling chase—escape by Jeep or on foot!</div>
     </header>
 
@@ -272,7 +272,7 @@ volcano"></textarea>
       nextWord(true);
       answer.focus({preventScroll:true});
       showBanner('Game Start!', '#18345a');
-      adjustForKeyboard(); autoScrollCanvas();
+      adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard();
     }
     function resetGame(){
       playing=false; ended=false; answer.value='';
@@ -285,7 +285,7 @@ volcano"></textarea>
       promptEl.textContent = `Listen and type the word ${idx+1} of ${words.length}.`;
       setTimeout(()=> answer.focus({preventScroll:true}), 0);
       if(!first){ setTimeout(()=>speak(currentWord), 300); } else { speak(currentWord); }
-      adjustForKeyboard(); autoScrollCanvas();
+      adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard();
     }
     function submitAnswer(){
       if(!playing || ended) return;
@@ -426,10 +426,8 @@ volcano"></textarea>
       if(!isSmallScreen() || !window.visualViewport) return;
       const vv = window.visualViewport;
       const h  = typeDock.offsetHeight || 84;
-      const safe = (window.CSS && CSS.supports('padding-bottom: env(safe-area-inset-bottom)')) ?  parseInt(getComputedStyle(document.body).getPropertyValue('padding-bottom')) || 0 : 0;
-      // Extra cushion for the iOS domain bar / "Done" accessory row
-      const extra = 64; // push well above keyboard + toolbar
-      const top = Math.max(0, vv.offsetTop + vv.height - h - extra);
+      const margin = 24; // smaller cushion so it isn't too high
+      const top = Math.max(0, vv.offsetTop + vv.height - h - margin);
       typeDock.style.position = 'fixed';
       typeDock.style.top = top + 'px';
       typeDock.style.bottom = 'auto';
@@ -438,7 +436,36 @@ volcano"></textarea>
       typeDock.style.top = '';
       typeDock.style.bottom = '0';
     }
-function updateDockPadding(){
+    // Watcher: keep the dock adjusted while keyboard toggles suggestion/toolbar heights
+    let kbWatcher = null;
+    function startKbWatcher(){
+      if(!window.visualViewport) return;
+      if(kbWatcher) return;
+      let lastH = 0, lastTop = 0;
+      const tick = ()=>{
+        if(!isSmallScreen()) { stopKbWatcher(); return; }
+        const vv = window.visualViewport;
+        if(Math.abs(vv.height - lastH) > 1 || Math.abs(vv.offsetTop - lastTop) > 1){
+          placeDockAboveKeyboard();
+          lastH = vv.height; lastTop = vv.offsetTop;
+        }
+        if(isKeyboardOpen()){
+          kbWatcher = requestAnimationFrame(tick);
+        }else{
+          stopKbWatcher();
+          restoreDockBottom();
+        }
+      };
+      // initialize
+      const vv = window.visualViewport;
+      lastH = vv.height; lastTop = vv.offsetTop;
+      placeDockAboveKeyboard();
+      kbWatcher = requestAnimationFrame(tick);
+    }
+    function stopKbWatcher(){
+      if(kbWatcher){ cancelAnimationFrame(kbWatcher); kbWatcher = null; }
+    }
+    function updateDockPadding(){
       const kb = isKeyboardOpen();
 
       if (isSmallScreen()){
@@ -468,7 +495,7 @@ function updateDockPadding(){
     }
     window.addEventListener('resize', ()=>{ resizeSketch(); updateDockPadding(); adjustForKeyboard(); });
     if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', ()=>{ updateDockPadding(); adjustForKeyboard(); autoScrollCanvas(); if(isKeyboardOpen()) placeDockAboveKeyboard(); else restoreDockBottom(); });
+      window.visualViewport.addEventListener('resize', ()=>{ updateDockPadding(); adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard(); if(isKeyboardOpen()) placeDockAboveKeyboard(); else restoreDockBottom(); });
     }
 
     // ---- Events ----
@@ -477,9 +504,10 @@ function updateDockPadding(){
     replayBtn.addEventListener('click', ()=> speak(currentWord));
     goBtn.addEventListener('click', submitAnswer);
     answer.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAnswer(); });
+    answer.addEventListener('input', ()=>{ if(isKeyboardOpen()) placeDockAboveKeyboard(); });
     muteBtn.addEventListener('click', toggleMusic);
-    answer.addEventListener('focus', ()=> setTimeout(()=>{ adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard(); }, 100));
-    answer.addEventListener('blur', ()=> setTimeout(()=>{ gameCanvas.style.height=''; restoreDockBottom(); }, 150));
+    answer.addEventListener('focus', ()=> setTimeout(()=>{ adjustForKeyboard(); autoScrollCanvas(); placeDockAboveKeyboard(); placeDockAboveKeyboard(); startKbWatcher(); }, 100));
+    answer.addEventListener('blur', ()=> setTimeout(()=>{ gameCanvas.style.height=''; restoreDockBottom(); stopKbWatcher(); }, 150));
 
     // ---- Sketch pad drawing (mouse + touch) ----
     let drawing=false, lastX=0, lastY=0;
