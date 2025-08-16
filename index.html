@@ -82,7 +82,7 @@
         position: fixed; left: 0; right: 0; bottom: 0;
         padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
         background: linear-gradient(180deg, rgba(13,27,42,.92), rgba(13,27,42,.98));
-        border-top: 1px solid #24345a; box-shadow: 0 -6px 24px rgba(0,0,0,.35); z-index: 9999;
+        border-top: 1px solid #24345a; box-shadow: 0 -6px 24px rgba(0,0,0,.35); z-index: 2147483647;
       }
       body{ padding-bottom: calc(var(--dockH) + env(safe-area-inset-bottom) + 24px); }
       #typeDock input{ flex:1 1 auto; min-width: 40%; }
@@ -92,7 +92,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>🦖 Spellassic Park <span class="tiny mono">v2.1</span></h1>
+      <h1>🦖 Spellassic Park <span class="tiny mono">v2.2</span></h1>
       <div class="subtitle">An 8‑bit spelling chase—escape by Jeep or on foot!</div>
     </header>
 
@@ -426,9 +426,10 @@ volcano"></textarea>
       if(!isSmallScreen() || !window.visualViewport) return;
       const vv = window.visualViewport;
       const h  = typeDock.offsetHeight || 84;
-      // Position the dock using top relative to the *visual* viewport
-      // so it sits just above the keyboard (and "Done" accessory bar)
-      const top = Math.max(0, vv.offsetTop + vv.height - h - 8);
+      const safe = (window.CSS && CSS.supports('padding-bottom: env(safe-area-inset-bottom)')) ?  parseInt(getComputedStyle(document.body).getPropertyValue('padding-bottom')) || 0 : 0;
+      // Extra cushion for the iOS domain bar / "Done" accessory row
+      const extra = 64; // push well above keyboard + toolbar
+      const top = Math.max(0, vv.offsetTop + vv.height - h - extra);
       typeDock.style.position = 'fixed';
       typeDock.style.top = top + 'px';
       typeDock.style.bottom = 'auto';
