@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
   <title>Spellassic Park • Professor Peter's Lab</title>
+  <meta name="description" content="Spellassic Park: an 8‑bit Jurassic spelling chase. Type words to keep the Jeep ahead of the T‑Rex, practice handwriting, and escape through the tunnel!" />
   <style>
     :root{
       --bg:#0c1222;
@@ -12,7 +13,7 @@
       --accent2:#58e28a;
       --danger:#ff6b6b;
       --text:#e9eef6;
-      --dockH: 80px;
+      --dockH: 84px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -27,130 +28,61 @@
       padding:16px;
       padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
     }
-    .app{
-      width:100%;
-      max-width:1280px; /* wide for side-scroller feel */
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    h1{
-      font-size: clamp(20px, 3.2vw, 36px);
-      letter-spacing:1px;
-      margin:0;
-      text-shadow: 0 2px 0 #0008;
-    }
+    .app{ width:100%; max-width:1280px; display:flex; flex-direction:column; gap:12px; }
+    h1{ font-size: clamp(20px, 3.2vw, 36px); letter-spacing:1px; margin:0; text-shadow: 0 2px 0 #0008; }
     .subtitle{opacity:.85; font-size:14px; margin-top:2px}
-    .card{
-      background: linear-gradient(#232b43,#161d31);
-      border:2px solid #2d3760;
-      border-radius:16px;
-      box-shadow: 0 12px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
-      overflow:hidden;
-    }
+    .card{ background: linear-gradient(#232b43,#161d31); border:2px solid #2d3760; border-radius:16px; box-shadow: 0 12px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03); overflow:hidden;}
     .card .inner{ padding:14px }
     /* Game canvas */
     #gameWrap{ padding:10px; position:relative; }
     #gameCanvas{
-      width:100%;
-      aspect-ratio: 16 / 9;
-      background:#5eb9ff;
-      border-radius:12px;
-      border:3px solid #0d1b2a;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
+      width:100%; aspect-ratio: 16 / 9; background:#5eb9ff;
+      border-radius:12px; border:3px solid #0d1b2a;
+      image-rendering: pixelated; image-rendering: crisp-edges;
       box-shadow: inset 0 0 0 3px #263b54, 0 10px 24px rgba(0,0,0,.35);
       display:block;
-      /* Keep canvas from eating too much vertical space on desktop */
-      max-height: 54vh;
+      max-height: 54vh; /* desktop cap so textbox & canvas fit together */
+      transition: height .12s ease, max-height .12s ease;
     }
-    @media (max-width: 800px){
-      #gameCanvas{ max-height: none; }
-    }
-    .hud{
-      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-      margin-top:10px;
-    }
+    @media (max-width: 800px){ #gameCanvas{ max-height:none; } }
+    .hud{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:10px; }
     .lives{font-size:22px; letter-spacing:2px}
-    .pill{
-      background:#0e1627; border:1px solid #22325a; border-radius:999px; padding:8px 12px; font-weight:600;
-    }
-    .controls{
-      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-    }
+    .pill{ background:#0e1627; border:1px solid #22325a; border-radius:999px; padding:8px 12px; font-weight:600; }
+    .controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     input[type="text"], textarea{
-      width:100%;
-      background:#0e1627;
-      border:2px solid #22325a;
-      color:var(--text);
-      border-radius:12px;
-      padding:12px 12px;
-      font-size:18px; /* avoid iOS zoom */
-      outline:none;
+      width:100%; background:#0e1627; border:2px solid #22325a; color:var(--text);
+      border-radius:12px; padding:12px 12px; font-size:18px; outline:none;
     }
     textarea{ min-height:140px; resize:vertical }
     button{
-      appearance:none; border:none;
-      background:linear-gradient(#ffe08a,#ffc34d);
-      color:#2a1b00; font-weight:800;
-      padding:10px 14px; border-radius:12px;
-      border:2px solid #9b6c18; box-shadow: 0 4px 0 #7a540f, 0 8px 18px rgba(0,0,0,.35);
-      cursor:pointer; font-size:16px;
+      appearance:none; border:none; background:linear-gradient(#ffe08a,#ffc34d); color:#2a1b00; font-weight:800;
+      padding:10px 14px; border-radius:12px; border:2px solid #9b6c18;
+      box-shadow: 0 4px 0 #7a540f, 0 8px 18px rgba(0,0,0,.35); cursor:pointer; font-size:16px;
     }
     button:active{ transform: translateY(1px); box-shadow: 0 3px 0 #7a540f, 0 4px 10px rgba(0,0,0,.35); }
-    .btn-secondary{
-      background:linear-gradient(#8fe6b1,#5bd989);
-      border-color:#2f7b52; box-shadow: 0 4px 0 #2b6d49, 0 8px 18px rgba(0,0,0,.35);
-      color:#062611;
-    }
-    .btn-ghost{
-      background:#0e1627; color:#cde8f8; border-color:#24345a;
-    }
+    .btn-secondary{ background:linear-gradient(#8fe6b1,#5bd989); border-color:#2f7b52; box-shadow: 0 4px 0 #2b6d49, 0 8px 18px rgba(0,0,0,.35); color:#062611;}
+    .btn-ghost{ background:#0e1627; color:#cde8f8; border-color:#24345a; }
     .row{ display:flex; gap:8px; flex-wrap:wrap }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas, "Liberation Mono","Courier New", monospace }
     /* Sketch pad */
-    #sketchPad{
-      width:100%;
-      aspect-ratio: 16/9; /* reduced height */
-      background:#0b1222; border:3px solid #24345a; border-radius:12px;
-      image-rendering: pixelated; touch-action: none; display:block;
-      box-shadow: inset 0 0 0 3px #1c2743, 0 6px 16px rgba(0,0,0,.35);
-    }
-    .sketchBar{
-      display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;
-    }
+    #sketchPad{ width:100%; aspect-ratio: 16/9; background:#0b1222; border:3px solid #24345a; border-radius:12px; image-rendering: pixelated; touch-action: none; display:block; box-shadow: inset 0 0 0 3px #1c2743, 0 6px 16px rgba(0,0,0,.35); }
+    .sketchBar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .legend{opacity:.85; font-size:13px}
-    .badge{
-      display:inline-block; padding:4px 8px; border-radius:999px; background:#152038; border:1px solid #273b64; font-size:12px; opacity:.85;
-    }
+    .badge{ display:inline-block; padding:4px 8px; border-radius:999px; background:#152038; border:1px solid #273b64; font-size:12px; opacity:.85; }
     .tiny{ font-size:12px; opacity:.75 }
     .footerNote{ font-size:12px; opacity:.75; text-align:center; margin-top:8px }
-    .overlay{
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
-    }
-    .overlay .panel{
-      pointer-events:auto; text-align:center; padding:16px 22px; background:rgba(0,0,0,.55); border:2px solid #26466f; border-radius:16px;
-    }
-    .banner{
-      position:absolute; left:50%; transform:translateX(-50%);
-      top:14px; background:#0e1627; border:2px solid #2f4f7e; padding:8px 14px; border-radius:10px; font-weight:900; letter-spacing:1px;
-    }
+    .overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .overlay .panel{ pointer-events:auto; text-align:center; padding:16px 22px; background:rgba(0,0,0,.55); border:2px solid #26466f; border-radius:16px; }
+    .banner{ position:absolute; left:50%; transform:translateX(-50%); top:14px; background:#0e1627; border:2px solid #2f4f7e; padding:8px 14px; border-radius:10px; font-weight:900; letter-spacing:1px; }
 
     /* TYPE DOCK: fixed controls on small screens so gameplay stays visible above keyboard */
-    #typeDock{
-      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-      margin-top:6px;
-    }
+    #typeDock{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; }
     @media (max-width: 800px){
       #typeDock{
-        position: fixed;
-        left: 0; right: 0;
-        bottom: 0;
+        position: fixed; left: 0; right: 0; bottom: 0;
         padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
         background: linear-gradient(180deg, rgba(13,27,42,.92), rgba(13,27,42,.98));
-        border-top: 1px solid #24345a;
-        box-shadow: 0 -6px 24px rgba(0,0,0,.35);
-        z-index: 50;
+        border-top: 1px solid #24345a; box-shadow: 0 -6px 24px rgba(0,0,0,.35); z-index: 50;
       }
       body{ padding-bottom: calc(var(--dockH) + env(safe-area-inset-bottom) + 24px); }
       #typeDock input{ flex:1 1 auto; min-width: 40%; }
@@ -160,11 +92,10 @@
 <body>
   <div class="app">
     <header>
-      <h1>🦖 Spellassic Park <span class="tiny mono">v1.7</span></h1>
-      <div class="subtitle">An 8-bit spelling chase—escape by Jeep or on foot!</div>
+      <h1>🦖 Spellassic Park <span class="tiny mono">v2.0</span></h1>
+      <div class="subtitle">An 8‑bit spelling chase—escape by Jeep or on foot!</div>
     </header>
 
-    <!-- Single-page layout: word list above, then game -->
     <section class="card" id="mainCard">
       <div class="inner">
         <!-- Word list (top) -->
@@ -180,9 +111,9 @@ volcano"></textarea>
           <button id="startBtn">Start Game</button>
           <button id="resetBtn" class="btn-ghost">Reset</button>
         </div>
-        <div class="tiny" style="opacity:.8; margin-top:6px">On iPhone/iPad, unmute the device for audio.</div>
+        <div class="tiny" style="opacity:.8; margin-top:6px">Tip: On iPhone/iPad, unmute the device for speech audio.</div>
 
-        <!-- Game area (wide) -->
+        <!-- Game area -->
         <div id="gameWrap" style="margin-top:14px">
           <div id="topBanner" class="banner hide"></div>
           <canvas id="gameCanvas" width="320" height="180"></canvas>
@@ -223,9 +154,8 @@ volcano"></textarea>
   </div>
 
   <script>
-  // --- 8-bit side scroller with car-to-foot chase transitions ---
   (()=>{
-    // DOM
+    // ---- DOM ----
     const startBtn  = document.getElementById('startBtn');
     const goBtn     = document.getElementById('goBtn');
     const replayBtn = document.getElementById('replayBtn');
@@ -238,11 +168,10 @@ volcano"></textarea>
     const muteBtn   = document.getElementById('muteBtn');
     const topBanner = document.getElementById('topBanner');
     const typeDock  = document.getElementById('typeDock');
-
+    const gameWrap  = document.getElementById('gameWrap');
     const gameCanvas= document.getElementById('gameCanvas');
     const g = gameCanvas.getContext('2d');
-    const W = gameCanvas.width;
-    const H = gameCanvas.height;
+    const W = gameCanvas.width, H = gameCanvas.height;
 
     // Sketch pad
     const sketch = document.getElementById('sketchPad');
@@ -250,128 +179,91 @@ volcano"></textarea>
     const clearSketch = document.getElementById('clearSketch');
     const thinPen = document.getElementById('thinPen');
     const thickPen = document.getElementById('thickPen');
+    let penWidth = 4;
 
-    // State
-    let words = [];
-    let idx = 0;
-    let lives = 3;
-    let playing = false;
-    let ended = false;
+    // ---- Game State ----
+    let words = [], idx = 0, lives = 3;
+    let playing = false, ended = false;
     let currentWord = '';
-    let gap = 56; // distance parameter
-    let bgScroll = 0;
-    let t = 0;
-    let audioCtx = null;
+    let gap = 56;            // distance parameter
+    let bgScroll = 0, t = 0;
     let lastRoarAt = 0;
-    let musicMuted = false; // only affects background music
 
-    // Music
-    const bgmAudio = new Audio("chip-mode-danijel-zambo-main-version-1431-02-05.mp3");
-    bgmAudio.loop = true; bgmAudio.preload='auto'; bgmAudio.volume = 0.35;
-
-    // Modes: 'car' -> 'runner' after 1st life lost
+    // Modes: 'car' -> 'runner' after first life lost
     let mode = 'car';
     let anim = { eatCar:false, catchRunner:false, escape:false };
     let escapeX = null;
 
     // Entities
     const jeep = { x: 170 + gap/2, y: 104, visible:true };
-    const driver = { x: 190, y: 122, vx:1.8, vy:0, visible:false, jumping:false, frame:0 };
-    const rex  = { x: 150 - gap/2, y: 86, frame: 0, scale:1.3, mouth:0 };
+    const driver = { x: 190, y: 122, vx:1.8, vy:0, visible:false, jumping:false };
+    const rex  = { x: 150 - gap/2, y: 86, frame: 0, scale:1.3 };
 
-    // Utility
+    // ---- Audio ----
+    let audioCtx = null;
+    let musicMuted = false; // mute only background music (speech + sfx unaffected)
+
+    const bgmAudio = new Audio("chip-mode-danijel-zambo-main-version-1431-02-05.mp3");
+    bgmAudio.loop = true; bgmAudio.preload='auto'; bgmAudio.volume = 0.35;
+
+    function ensureAudio(){ if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx.state==='suspended') audioCtx.resume(); }
+
+    function toneSequence(steps){
+      ensureAudio();
+      const now = audioCtx.currentTime; let ct = now;
+      steps.forEach(s=>{
+        const o = audioCtx.createOscillator(), gg = audioCtx.createGain();
+        o.type = s.type || 'square'; o.frequency.value = s.f; gg.gain.value = 0.0001;
+        o.connect(gg).connect(audioCtx.destination);
+        o.start(ct);
+        gg.gain.setValueAtTime(0.001, ct);
+        gg.gain.exponentialRampToValueAtTime(s.v || 0.3, ct + (s.len||0.12)*0.2);
+        gg.gain.exponentialRampToValueAtTime(0.0001, ct + (s.len||0.12));
+        o.stop(ct + (s.len||0.12));
+        ct += s.wait || (s.len||0.12)*0.9;
+      });
+    }
+    const sfxCorrect = ()=> toneSequence([{f:660,len:.08},{f:990,len:.08},{f:1320,len:.10}]);
+    const sfxWrong   = ()=> toneSequence([{f:220,len:.16,type:'sawtooth',v:.25},{f:160,len:.18,type:'sawtooth',v:.22}]);
+    const sfxRoar    = ()=>{ toneSequence([{f:220,len:.20,type:'triangle',v:.35},{f:150,len:.25,type:'triangle',v:.32},{f:110,len:.30,type:'triangle',v:.28}]); lastRoarAt=performance.now(); };
+    const sfxEscape  = ()=> toneSequence([{f:523,len:.12},{f:659,len:.12},{f:784,len:.24},{f:1046,len:.2,wait:.12}]);
+
+    // Speech (Web Speech API) — unaffected by music mute
+    function speak(text){
+      try{
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US'; u.rate = 0.95;
+        const v = window.speechSynthesis.getVoices().find(v=>/Samantha|Moira|Karen|Daniel|Victoria|Allison|Ava|Alyss/i.test(v.name));
+        if(v) u.voice = v;
+        window.speechSynthesis.speak(u);
+      }catch{}
+    }
+
+    function toggleMusic(){
+      musicMuted = !musicMuted;
+      muteBtn.textContent = musicMuted ? '🎵 Unmute Music' : '🎵 Mute Music';
+      try{ bgmAudio.muted = musicMuted; }catch{}
+    }
+
+    // ---- Flow ----
     function showBanner(text, color){
       topBanner.textContent = text;
       topBanner.style.background = color || '#0e1627';
       topBanner.classList.remove('hide');
       setTimeout(()=> topBanner.classList.add('hide'), 2200);
     }
-
-    // Handle device pixel ratio for sketch pad crispness
-    function resizeSketch(){
-      const dpr = window.devicePixelRatio || 1;
-      const cssW = sketch.clientWidth;
-      const cssH = sketch.clientHeight;
-      sketch.width  = Math.round(cssW * dpr);
-      sketch.height = Math.round(cssH * dpr);
-      sg.setTransform(dpr,0,0,dpr,0,0);
-      sg.lineCap = 'round';
-      sg.lineJoin = 'round';
-      sg.lineWidth = penWidth;
-      sg.strokeStyle = '#e9eef6';
-      sg.fillStyle = '#0b1222';
-      sg.fillRect(0,0,sketch.width,sketch.height);
-    }
-    let penWidth = 4;
-
-    // --- Audio helpers (WebAudio beeps) ---
-    function ensureAudio(){
-      if(!audioCtx){
-        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function toneSequence(steps){
-      ensureAudio();
-      const now = audioCtx.currentTime;
-      let t = now;
-      steps.forEach(s=>{
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.type = s.type || 'square';
-        o.frequency.value = s.f;
-        g.gain.value = 0.0001;
-        o.connect(g).connect(audioCtx.destination);
-        o.start(t);
-        g.gain.setValueAtTime(0.001, t);
-        g.gain.exponentialRampToValueAtTime(s.v || 0.3, t + (s.len||0.12)*0.2);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + (s.len||0.12));
-        o.stop(t + (s.len||0.12));
-        t += s.wait || (s.len||0.12)*0.9;
-      });
-    }
-    function sfxCorrect(){ toneSequence([{f: 660, len:.08, type:'square'},{f: 990, len:.08, type:'square'},{f:1320, len:.10, type:'square'}]); }
-    function sfxWrong(){ toneSequence([{f:220, len:.16, type:'sawtooth', v:.25},{f:160, len:.18, type:'sawtooth', v:.22}]); }
-    function sfxRoar(){ toneSequence([{f:220,len:.20,type:'triangle',v:.35},{f:150,len:.25,type:'triangle',v:.32},{f:110,len:.30,type:'triangle',v:.28}]); lastRoarAt=performance.now(); }
-    function sfxEscape(){ toneSequence([{f:523,len:.12},{f:659,len:.12},{f:784,len:.24},{f:1046,len:.2,wait:.12}]); }
-
-    // --- Speech (Web Speech API) ---
-    function speak(text){
-      try{
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
-        u.rate = 0.95;
-        const voices = window.speechSynthesis.getVoices();
-        const v = voices.find(v=>/Samantha|Moira|Karen|Daniel|Victoria|Allison|Ava|Alyss/i.test(v.name));
-        if(v) u.voice = v;
-        window.speechSynthesis.speak(u);
-      }catch(e){ /* ignore */ }
-    }
-
-    // --- Music control (only background music) ---
-    function toggleMusic(){
-      musicMuted = !musicMuted;
-      muteBtn.textContent = musicMuted ? '🎵 Unmute Music' : '🎵 Mute Music';
-      try{ bgmAudio.muted = musicMuted; }catch(e){}
-    }
-
-    // --- Game flow ---
     function setLives(n){
       lives = Math.max(0, Math.min(3, n));
       livesEl.textContent = '❤️'.repeat(lives) + '🦖'.repeat(3-lives);
     }
-    function setProgress(i,total){
-      progressEl.textContent = `Word ${Math.min(i+1,total)}/${total}`;
-    }
-    function parseWords(text){
-      return text.split(/[\n,]+/).map(w=>w.trim()).filter(Boolean);
-    }
+    function setProgress(i,total){ progressEl.textContent = `Word ${Math.min(i+1,total)}/${total}`; }
+    function parseWords(text){ return text.split(/[\n,]+/).map(w=>w.trim()).filter(Boolean); }
+    const normalize = s => (s||'').trim().toLowerCase();
+
     function startGame(){
       words = parseWords(wordList.value);
-      if(words.length===0){
-        words = ['dinosaur','fossil','jeep','jungle','escape','tunnel','volcano'];
-      }
+      if(!words.length) words = ['dinosaur','fossil','jeep','jungle','escape','tunnel','volcano'];
       idx = 0; gap = 56; setLives(3); playing = true; ended=false;
       mode='car'; anim={eatCar:false, catchRunner:false, escape:false}; escapeX=null;
       jeep.visible = true; driver.visible=false; driver.jumping=false; driver.x=190; driver.y=122; driver.vx=1.8; driver.vy=0;
@@ -380,355 +272,223 @@ volcano"></textarea>
       nextWord(true);
       answer.focus({preventScroll:true});
       showBanner('Game Start!', '#18345a');
+      adjustForKeyboard(); autoScrollCanvas();
     }
     function resetGame(){
-      playing=false; ended=false;
-      answer.value='';
-      resizeSketch();
-      showBanner('Reset', '#18345a');
+      playing=false; ended=false; answer.value='';
+      resizeSketch(); showBanner('Reset','#18345a');
     }
-
-    function normalize(s){ return (s||'').trim().toLowerCase(); }
-
     function nextWord(first=false){
-      if(idx >= words.length){ win(); return; }
+      if(idx >= words.length) return win();
       currentWord = words[idx];
       setProgress(idx, words.length);
       promptEl.textContent = `Listen and type the word ${idx+1} of ${words.length}.`;
-      // Re-focus the input for continuous play, without scrolling the page
       setTimeout(()=> answer.focus({preventScroll:true}), 0);
       if(!first){ setTimeout(()=>speak(currentWord), 300); } else { speak(currentWord); }
+      adjustForKeyboard(); autoScrollCanvas();
     }
-
     function submitAnswer(){
       if(!playing || ended) return;
-      const a = normalize(answer.value);
-      const w = normalize(currentWord);
-      if(a === w){
-        sfxCorrect();
-        gap += (mode==='car'? 22 : 18);
-      }else{
-        sfxWrong();
-        setLives(lives-1);
-        gap -= (mode==='car'? 18 : 16);
-        if(lives===2 && mode==='car' && !anim.eatCar){
-          anim.eatCar = true;
-          eatCarSequence();
-          return advanceWord();
-        }
-        if(lives<=0){
-          return catchRunnerSequence();
-        }
+      const correct = normalize(answer.value) === normalize(currentWord);
+      if(correct){ sfxCorrect(); gap += (mode==='car'? 22 : 18); }
+      else{
+        sfxWrong(); setLives(lives-1); gap -= (mode==='car'? 18 : 16);
+        if(lives===2 && mode==='car' && !anim.eatCar){ anim.eatCar=true; eatCarSequence(); idx++; answer.value=''; return nextWord(); }
+        if(lives<=0) return catchRunnerSequence();
       }
-      advanceWord();
-    }
-    function advanceWord(){
-      idx++;
-      answer.value='';
-      nextWord();
+      idx++; answer.value=''; nextWord();
     }
 
-    // --- Transition sequences ---
+    // ---- Sequences ----
     function eatCarSequence(){
       const step = ()=>{
         if(gap > 8){ gap -= 4; requestAnimationFrame(step); return; }
         sfxRoar();
-        setTimeout(()=>{
-          jeep.visible = false;
-          mode = 'runner';
-          driver.visible = true;
-          gap = 36;
-          anim.eatCar = false;
-        }, 300);
-      };
-      step();
+        setTimeout(()=>{ jeep.visible=false; mode='runner'; driver.visible=true; gap=36; anim.eatCar=false; }, 300);
+      }; step();
     }
-
     function catchRunnerSequence(){
-      playing=false;
-      sfxRoar();
-      anim.catchRunner = true;
+      playing=false; sfxRoar(); anim.catchRunner=true;
       overlay('🦖 The T‑Rex got you!', 'Game Over');
       const closeStep = ()=>{
         if(gap > 6){ gap -= 3; requestAnimationFrame(closeStep); return; }
-        driver.jumping = true;
-        driver.vy = -4.2;
-        driver.vx = 2.2;
-      };
-      closeStep();
+        driver.jumping = true; driver.vy = -4.2; driver.vx = 2.2;
+      }; closeStep();
     }
-
     function win(){
-      ended=true; playing=false;
-      anim.escape = true;
-      sfxEscape();
-      showBanner('You Escaped!', '#225c2a');
-      escapeX = (mode==='car' ? jeep.x : driver.x);
+      ended=true; playing=false; anim.escape=true; sfxEscape();
+      showBanner('You Escaped!', '#225c2a'); escapeX = (mode==='car' ? jeep.x : driver.x);
     }
 
-    // Simple overlay message
-    let overlayDiv = null;
+    // ---- Overlay ----
+    let overlayDiv=null;
     function overlay(title, sub){
-      if(overlayDiv){ overlayDiv.remove(); }
+      if(overlayDiv) overlayDiv.remove();
       overlayDiv = document.createElement('div');
       overlayDiv.className = 'overlay';
       overlayDiv.innerHTML = `
         <div class="panel">
           <div style="font-size:28px; font-weight:900; letter-spacing:1px">${title}</div>
           <div style="opacity:.9; margin-top:6px">${sub}</div>
-          <div style="margin-top:10px">
-            <button id="playAgain" class="btn-secondary">Play Again</button>
-          </div>
+          <div style="margin-top:10px"><button id="playAgain" class="btn-secondary">Play Again</button></div>
         </div>`;
-      document.getElementById('gameWrap').appendChild(overlayDiv);
-      overlayDiv.querySelector('#playAgain').addEventListener('click', ()=>{
-        overlayDiv.remove(); overlayDiv=null; resetGame();
-      });
+      gameWrap.appendChild(overlayDiv);
+      overlayDiv.querySelector('#playAgain').addEventListener('click', ()=>{ overlayDiv.remove(); overlayDiv=null; resetGame(); });
     }
 
-    // --- Drawing helpers ---
+    // ---- Drawing ----
     function drawSky(){
       const sky = g.createLinearGradient(0,0,0,H);
-      sky.addColorStop(0,'#5eb9ff');
-      sky.addColorStop(1,'#9fe4ff');
-      g.fillStyle = sky;
-      g.fillRect(0,0,W,H);
-      // distant hills
-      g.fillStyle = '#6bb769';
-      drawHill(0,110, 80, 26);
-      drawHill(90,116, 70, 24);
-      drawHill(180,108, 90, 30);
-      drawHill(260,118, 60, 22);
+      sky.addColorStop(0,'#5eb9ff'); sky.addColorStop(1,'#9fe4ff'); g.fillStyle = sky; g.fillRect(0,0,W,H);
+      g.fillStyle = '#6bb769'; drawHill(0,110,80,26); drawHill(90,116,70,24); drawHill(180,108,90,30); drawHill(260,118,60,22);
     }
-    function drawHill(x, y, w, h){
-      g.fillRect(x,y,w,h);
-      g.fillRect(x+Math.floor(w*0.4), y-8, Math.floor(w*0.6), h+8);
-    }
+    const drawHill=(x,y,w,h)=>{ g.fillRect(x,y,w,h); g.fillRect(x+Math.floor(w*0.4), y-8, Math.floor(w*0.6), h+8); };
     function drawGround(scroll){
-      const groundY = 130; // more ground, less sky
-      g.fillStyle = '#3ea950';
-      g.fillRect(0,groundY,W, H-groundY);
-      g.fillStyle = '#2b7a3a';
-      const stripeH = 6;
-      for(let i=0;i<5;i++){
-        const y = groundY + 2 + i*stripeH;
-        g.fillRect( - (scroll%16), y, W + 16, 2);
-      }
-      g.fillStyle = '#2e7d32';
-      for(let x=-(scroll%40); x<W; x+=40){
-        g.fillRect(x, groundY-6, 10, 6);
-        g.fillRect(x+6, groundY-10, 8, 10);
-      }
-      if(anim.escape){
-        drawTunnel();
-      }
+      const groundY = 130;
+      g.fillStyle='#3ea950'; g.fillRect(0,groundY,W, H-groundY);
+      g.fillStyle='#2b7a3a'; for(let i=0;i<5;i++){ const y=groundY+2+i*6; g.fillRect( - (scroll%16), y, W+16, 2); }
+      g.fillStyle='#2e7d32'; for(let x=-(scroll%40); x<W; x+=40){ g.fillRect(x,groundY-6,10,6); g.fillRect(x+6, groundY-10, 8,10); }
+      if(anim.escape) drawTunnel();
     }
-
-    // Jeep
     function drawJeep(x,y){
       if(!jeep.visible) return;
-      g.fillStyle='#111'; g.fillRect(x-20,y+16, 10,10); g.fillRect(x+16,y+16,10,10);
-      g.fillStyle='#c62828'; g.fillRect(x-18,y+18, 6,6); g.fillRect(x+18,y+18,6,6);
-      g.fillStyle='#d9c3a5'; g.fillRect(x-26,y, 60,16);
-      g.fillStyle='#303030'; g.fillRect(x-30,y+4, 4,10); g.fillRect(x+34,y+4, 4,10);
-      g.fillStyle='#2b2b2b'; g.fillRect(x-18,y-10, 4,10); g.fillRect(x+10,y-10, 4,10);
-      g.fillRect(x-18,y-12, 32,3);
-      g.fillStyle='#a9cee8'; g.fillRect(x-10,y-8, 22,8);
-      g.fillStyle='#cc2c2c'; g.fillRect(x-26,y+8, 60,3);
-      g.fillRect(x-26,y+3, 18,2); g.fillRect(x+8,y+3, 18,2);
-      g.fillStyle='#b71c1c'; g.fillRect(x-6,y+2, 6,6);
-      g.fillStyle='#ffd460'; g.fillRect(x-5,y+3, 1,4); g.fillRect(x-3,y+3, 1,4);
-      g.fillStyle='#fff59d'; g.fillRect(x+30,y+6, 4,4);
-      g.fillStyle='#111'; g.fillRect(x-32,y+8, 6,6);
+      g.fillStyle='#111'; g.fillRect(x-20,y+16,10,10); g.fillRect(x+16,y+16,10,10);
+      g.fillStyle='#c62828'; g.fillRect(x-18,y+18,6,6); g.fillRect(x+18,y+18,6,6);
+      g.fillStyle='#d9c3a5'; g.fillRect(x-26,y,60,16);
+      g.fillStyle='#303030'; g.fillRect(x-30,y+4,4,10); g.fillRect(x+34,y+4,4,10);
+      g.fillStyle='#2b2b2b'; g.fillRect(x-18,y-10,4,10); g.fillRect(x+10,y-10,4,10); g.fillRect(x-18,y-12,32,3);
+      g.fillStyle='#a9cee8'; g.fillRect(x-10,y-8,22,8);
+      g.fillStyle='#cc2c2c'; g.fillRect(x-26,y+8,60,3); g.fillRect(x-26,y+3,18,2); g.fillRect(x+8,y+3,18,2);
+      g.fillStyle='#b71c1c'; g.fillRect(x-6,y+2,6,6); g.fillStyle='#ffd460'; g.fillRect(x-5,y+3,1,4); g.fillRect(x-3,y+3,1,4);
+      g.fillStyle='#fff59d'; g.fillRect(x+30,y+6,4,4); g.fillStyle='#111'; g.fillRect(x-32,y+8,6,6);
     }
-
-    // Driver with hat
     function drawDriver(x,y,frame){
       if(!driver.visible) return;
-      g.fillStyle='#e0e0e0'; g.fillRect(x-3,y-10, 6,10);
-      g.fillStyle='#ffcc99'; g.fillRect(x-3,y-16, 6,6);
-      g.fillStyle='#b58a5a'; g.fillRect(x-3,y-18, 6,3); // crown
-      g.fillStyle='#a67c52'; g.fillRect(x-6,y-17, 12,2); // brim
-      const leg = (frame%12<6)? -2 : 2;
-      g.fillStyle='#3f51b5'; g.fillRect(x-6+leg,y, 4,8);
-      g.fillRect(x+2-leg,y, 4,8);
-      g.fillStyle='#ffcc99'; g.fillRect(x-6,y-8, 4,4);
-      g.fillRect(x+2,y-8, 4,4);
+      g.fillStyle='#e0e0e0'; g.fillRect(x-3,y-10,6,10);
+      g.fillStyle='#ffcc99'; g.fillRect(x-3,y-16,6,6);
+      g.fillStyle='#b58a5a'; g.fillRect(x-3,y-18,6,3); g.fillStyle='#a67c52'; g.fillRect(x-6,y-17,12,2); // hat
+      const leg=(frame%12<6)? -2:2;
+      g.fillStyle='#3f51b5'; g.fillRect(x-6+leg,y,4,8); g.fillRect(x+2-leg,y,4,8);
+      g.fillStyle='#ffcc99'; g.fillRect(x-6,y-8,4,4); g.fillRect(x+2,y-8,4,4);
     }
-
-    // T-Rex
     function drawRex(x,y,frame,scale){
-      g.save();
-      g.translate(x,y);
-      g.scale(scale,scale);
-      g.fillStyle='#3a6736'; g.fillRect(-40,6, 16,6); g.fillRect(-24,4, 10,8);
-      g.fillRect(-18,0, 30,20);
-      const stride = (frame%20<10)? 0 : 4;
-      g.fillRect(-8,20, 8,8); g.fillRect(-6+stride,28, 6,6);
-      g.fillRect(8,20, 8,8);  g.fillRect(10-stride,28, 6,6);
-      g.fillRect(6,10, 8,4);
-      g.fillRect(8,-12, 12,12);
-      const mouthOpen = (frame%16<8) ? 1 : 0;
-      g.fillRect(18,-10, 14,10);
-      if(mouthOpen){
-        g.fillStyle='#203018';
-        g.fillRect(18,-2, 14,6);
-        g.fillStyle='#fff';
-        g.fillRect(20,-2, 3,2); g.fillRect(24,-2, 3,2); g.fillRect(28,-2, 3,2);
-        g.fillRect(22,2, 3,2);  g.fillRect(26,2, 3,2);
-      }else{
-        g.fillStyle='#fff';
-        g.fillRect(20,-2, 10,2);
-      }
-      g.fillStyle='#000'; g.fillRect(28,-6, 2,2);
-      g.restore();
+      g.save(); g.translate(x,y); g.scale(scale,scale);
+      g.fillStyle='#3a6736'; g.fillRect(-40,6,16,6); g.fillRect(-24,4,10,8);
+      g.fillRect(-18,0,30,20);
+      const stride=(frame%20<10)?0:4; g.fillRect(-8,20,8,8); g.fillRect(-6+stride,28,6,6); g.fillRect(8,20,8,8); g.fillRect(10-stride,28,6,6);
+      g.fillRect(6,10,8,4); g.fillRect(8,-12,12,12);
+      const mouthOpen=(frame%16<8); g.fillRect(18,-10,14,10);
+      if(mouthOpen){ g.fillStyle='#203018'; g.fillRect(18,-2,14,6); g.fillStyle='#fff'; g.fillRect(20,-2,3,2); g.fillRect(24,-2,3,2); g.fillRect(28,-2,3,2); g.fillRect(22,2,3,2); g.fillRect(26,2,3,2); }
+      else{ g.fillStyle='#fff'; g.fillRect(20,-2,10,2); }
+      g.fillStyle='#000'; g.fillRect(28,-6,2,2); g.restore();
     }
-
     function drawTunnel(){
-      const tx = W - 30;
-      const ty = 120;
-      g.fillStyle = '#1f1f1f';
-      g.fillRect(tx, ty-10, 26, 40);
-      g.fillStyle = '#555';
-      g.fillRect(tx+2, ty-6, 22, 32);
-      g.fillStyle = '#ffd460';
-      g.fillRect(tx-60, ty+21, 60, 2);
+      const tx=W-30, ty=120; g.fillStyle='#1f1f1f'; g.fillRect(tx,ty-10,26,40); g.fillStyle='#555'; g.fillRect(tx+2,ty-6,22,32);
+      g.fillStyle='#ffd460'; g.fillRect(tx-60,ty+21,60,2);
     }
 
-    // Animation loop
+    // ---- Loop ----
     function loop(){
-      t++;
-      bgScroll += 0.7;
-      drawSky();
-      drawGround(bgScroll);
-
+      t++; bgScroll += 0.7; drawSky(); drawGround(bgScroll);
       if(!anim.escape){
-        if(mode==='car'){
-          jeep.x = 170 + gap/2;
-          jeep.y = 104 + Math.sin(t/12)*1.2;
-        }else{
-          driver.x = 170 + gap/2;
-          driver.y = 122 + Math.sin(t/9)*1.0;
-        }
+        if(mode==='car'){ jeep.x=170+gap/2; jeep.y=104+Math.sin(t/12)*1.2; } else { driver.x=170+gap/2; driver.y=122+Math.sin(t/9)*1.0; }
       }else{
-        if(escapeX==null){ escapeX = (mode==='car'? jeep.x : driver.x); }
+        if(escapeX==null) escapeX=(mode==='car'?jeep.x:driver.x);
         escapeX += (mode==='car' ? 3.2 : 2.8);
-        if(mode==='car'){
-          jeep.x = escapeX; jeep.y = 104 + Math.sin(t/12)*1.0;
-        }else{
-          driver.x = escapeX; driver.y = 122 + Math.sin(t/9)*0.8;
-        }
+        if(mode==='car'){ jeep.x=escapeX; jeep.y=104+Math.sin(t/12)*1.0; } else { driver.x=escapeX; driver.y=122+Math.sin(t/9)*0.8; }
         gap += 2.2;
-        if((mode==='car' ? jeep.x : driver.x) > W + 40){
-          anim.escape=false;
-          overlay('🏁 You escaped!', 'You made it to the tunnel!');
-        }
+        if((mode==='car'?jeep.x:driver.x) > W+40){ anim.escape=false; overlay('🏁 You escaped!','You made it to the tunnel!'); }
       }
+      rex.x=150-gap/2; rex.y=86+Math.sin(t/9)*1.0; rex.frame=t;
+      if(mode==='car'){ drawJeep(jeep.x,jeep.y); } else { drawDriver(driver.x,driver.y,t); }
+      drawRex(rex.x,rex.y,rex.frame,rex.scale);
 
-      rex.x  = 150 - gap/2;
-      rex.y  = 86 + Math.sin(t/9)*1.0;
-      rex.frame = t;
+      if(driver.jumping){ driver.vy+=0.18; driver.x+=driver.vx; driver.y+=driver.vy; if(driver.y<-20||driver.x>W+20||driver.x<-20) driver.jumping=false; }
 
-      if(mode==='car'){
-        jeep.x = Math.max(36, Math.min(W+80, jeep.x));
-      }else{
-        driver.x = Math.max(-40, Math.min(W+80, driver.x));
+      if(playing && gap<14){
+        const now=performance.now(); if(now-lastRoarAt>2000) sfxRoar();
+        const dx=(Math.random()-.5)*2, dy=(Math.random()-.5)*2; g.drawImage(gameCanvas,dx,dy);
       }
-      rex.x  = Math.max(18, Math.min(W-36, rex.x));
-
-      if(mode==='car'){ drawJeep(jeep.x, jeep.y); }
-      else { drawDriver(driver.x, driver.y, t); }
-      drawRex(rex.x, rex.y, rex.frame, rex.scale);
-
-      if(driver.jumping){
-        driver.vy += 0.18;
-        driver.x  += driver.vx;
-        driver.y  += driver.vy;
-        if(driver.y < -20 || driver.x > W+20 || driver.x < -20){
-          driver.jumping = false;
-        }
-      }
-
-      if(playing && gap < 14){
-        const now = performance.now();
-        if(now - lastRoarAt > 2000){ sfxRoar(); }
-        const dx = (Math.random()-.5)*2;
-        const dy = (Math.random()-.5)*2;
-        g.drawImage(gameCanvas, dx, dy);
-      }
-
       requestAnimationFrame(loop);
     }
     loop();
 
-    // --- Events ---
-    startBtn.addEventListener('click', startGame);
-    goBtn.addEventListener('click', submitAnswer);
-    replayBtn.addEventListener('click', ()=> speak(currentWord));
-    resetBtn.addEventListener('click', resetGame);
-    answer.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){ submitAnswer(); }
-    });
-    muteBtn.addEventListener('click', toggleMusic);
+    // ---- Mobile keyboard handling ----
+    function isSmallScreen(){ return window.matchMedia('(max-width: 800px)').matches; }
+    function updateDockPadding(){
+      if (isSmallScreen()){
+        const h = typeDock.offsetHeight || 84;
+        document.documentElement.style.setProperty('--dockH', h+'px');
+        document.body.style.paddingBottom = `calc(${h}px + env(safe-area-inset-bottom) + 16px)`;
+      }else document.body.style.paddingBottom = '16px';
+    }
+    function autoScrollCanvas(){
+      if(!isSmallScreen() || !window.visualViewport) return;
+      const rect = gameCanvas.getBoundingClientRect(), vv = window.visualViewport, dockH = typeDock.offsetHeight || 84;
+      const bottomLimit = vv.height - dockH - 8;
+      if(rect.bottom > bottomLimit || rect.top < 0){
+        const targetTop = window.scrollY + rect.top - 8;
+        window.scrollTo({top: targetTop, behavior:'smooth'});
+      }
+    }
+    function adjustForKeyboard(){
+      if(!isSmallScreen() || !window.visualViewport){ gameCanvas.style.height=''; return; }
+      const vv = window.visualViewport, dockH = typeDock.offsetHeight || 84;
+      const width = gameCanvas.clientWidth || 320;
+      const defaultH = width * 9/16;
+      const available = vv.height - dockH - 16;
+      const target = Math.max(120, Math.min(defaultH, available));
+      gameCanvas.style.height = target + 'px';
+    }
+    window.addEventListener('resize', ()=>{ resizeSketch(); updateDockPadding(); adjustForKeyboard(); });
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', ()=>{ updateDockPadding(); adjustForKeyboard(); autoScrollCanvas(); });
+    }
 
-    // --- Sketch pad drawing (mouse + touch) ---
+    // ---- Events ----
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+    replayBtn.addEventListener('click', ()=> speak(currentWord));
+    goBtn.addEventListener('click', submitAnswer);
+    answer.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAnswer(); });
+    muteBtn.addEventListener('click', toggleMusic);
+    answer.addEventListener('focus', ()=> setTimeout(()=>{ adjustForKeyboard(); autoScrollCanvas(); }, 100));
+    answer.addEventListener('blur', ()=> setTimeout(()=>{ gameCanvas.style.height=''; }, 150));
+
+    // ---- Sketch pad drawing (mouse + touch) ----
     let drawing=false, lastX=0, lastY=0;
     function skDown(x,y){ drawing=true; lastX=x; lastY=y; }
     function skMove(x,y){
       if(!drawing) return;
-      sg.strokeStyle = '#e9eef6';
-      sg.lineWidth = penWidth;
-      sg.beginPath();
-      sg.moveTo(lastX,lastY);
-      sg.lineTo(x,y);
-      sg.stroke();
-      lastX=x; lastY=y;
+      sg.strokeStyle='#e9eef6'; sg.lineWidth=penWidth;
+      sg.beginPath(); sg.moveTo(lastX,lastY); sg.lineTo(x,y); sg.stroke(); lastX=x; lastY=y;
     }
     function skUp(){ drawing=false; }
-
     function getPos(e){
-      const rect = sketch.getBoundingClientRect();
-      if(e.touches && e.touches[0]){
-        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-      }else{
-        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      }
+      const r=sketch.getBoundingClientRect();
+      return e.touches?.[0] ? {x:e.touches[0].clientX-r.left, y:e.touches[0].clientY-r.top}
+                             : {x:e.clientX-r.left, y:e.clientY-r.top};
     }
-
-    sketch.addEventListener('mousedown', (e)=>{ const p=getPos(e); skDown(p.x,p.y); });
-    sketch.addEventListener('mousemove', (e)=>{ const p=getPos(e); skMove(p.x,p.y); });
-    window.addEventListener('mouseup',  skUp);
-
-    sketch.addEventListener('touchstart', (e)=>{ const p=getPos(e); skDown(p.x,p.y); e.preventDefault(); }, {passive:false});
-    sketch.addEventListener('touchmove',  (e)=>{ const p=getPos(e); skMove(p.x,p.y); e.preventDefault(); }, {passive:false});
-    sketch.addEventListener('touchend',   (e)=>{ skUp(); e.preventDefault(); }, {passive:false});
-
-    clearSketch.addEventListener('click', ()=> resizeSketch());
-    thinPen.addEventListener('click', ()=>{ penWidth=3; });
-    thickPen.addEventListener('click',()=>{ penWidth=7; });
-
-    window.addEventListener('resize', ()=>{ resizeSketch(); updateDockPadding(); });
-    // Use visualViewport to update padding when the keyboard opens on iOS
-    if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', updateDockPadding);
+    sketch.addEventListener('mousedown', e=>{ const p=getPos(e); skDown(p.x,p.y); });
+    sketch.addEventListener('mousemove', e=>{ const p=getPos(e); skMove(p.x,p.y); });
+    window.addEventListener('mouseup', skUp);
+    sketch.addEventListener('touchstart', e=>{ const p=getPos(e); skDown(p.x,p.y); e.preventDefault(); }, {passive:false});
+    sketch.addEventListener('touchmove',  e=>{ const p=getPos(e); skMove(p.x,p.y); e.preventDefault(); }, {passive:false});
+    sketch.addEventListener('touchend',   e=>{ skUp(); e.preventDefault(); }, {passive:false});
+    clearSketch.addEventListener('click', resizeSketch);
+    thinPen.addEventListener('click', ()=> penWidth=3 );
+    thickPen.addEventListener('click', ()=> penWidth=7 );
+    function resizeSketch(){
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = sketch.clientWidth, cssH = sketch.clientHeight;
+      sketch.width = Math.round(cssW*dpr); sketch.height = Math.round(cssH*dpr);
+      sg.setTransform(dpr,0,0,dpr,0,0); sg.lineCap='round'; sg.lineJoin='round';
+      sg.fillStyle='#0b1222'; sg.fillRect(0,0,sketch.width,sketch.height);
     }
-    resizeSketch();
-    updateDockPadding();
+    resizeSketch(); updateDockPadding();
 
-    function updateDockPadding(){
-      if (window.matchMedia('(max-width: 800px)').matches){
-        const h = typeDock.offsetHeight || 80;
-        document.documentElement.style.setProperty('--dockH', h+'px');
-        document.body.style.paddingBottom = `calc(${h}px + env(safe-area-inset-bottom) + 16px)`;
-      }else{
-        document.body.style.paddingBottom = '16px';
-      }
-    }
-
-    // preload voices event hook
-    if ('speechSynthesis' in window){
-      window.speechSynthesis.onvoiceschanged = ()=>{};
-    }
+    // Preload voices
+    if('speechSynthesis' in window){ window.speechSynthesis.onvoiceschanged = ()=>{}; }
   })();
   </script>
 </body>
